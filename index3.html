@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<body></body>
+
+<script>
+    let lastEvent = null; // 上一次記錄的事件資料
+
+    window.addEventListener('pointerdown', (e) => {
+        const current = serializeEvent(e);
+        const stylusType = detectStylusHeuristic(e);
+
+        let diff = "";
+        if (lastEvent) {
+            diff = compareEvents(lastEvent, current);
+        }
+
+        lastEvent = current; // 更新記錄
+
+        document.body.innerHTML =
+            `<pre>
+=== Stylus Heuristic: ${e.pointerType}  ${stylusType} ===
+
+${diff || "第一次事件，無差異"}
+
+</pre>`;
+    });
+
+
+    /* ---- 你的判斷邏輯 ---- */
+    function detectStylusHeuristic(ev) {
+        if (ev.pointerType === "pen") return "apple-pencil";
+
+        const s = 15;
+        const m = 85;
+
+        const smallTip = Math.abs(ev.width - m) < s;
+        if (smallTip) return "maybe-stylus";
+
+        return "finger";
+    }
+
+    /* ---- 序列化事件（只保留可比較屬性） ---- */
+    function serializeEvent(ev) {
+        const obj = {};
+        for (let k in ev) {
+            const v = ev[k];
+            if (typeof v !== "object" && typeof v !== "function") {
+                obj[k] = v;
+            }
+        }
+        return obj;
+    }
+
+    /* ---- 比較前後事件差異 ---- */
+    function compareEvents(ev1, ev2) {
+        let diffText = "差異（前 → 後）:\n";
+
+        for (let k in ev2) {
+            if (ev1[k] !== ev2[k]) {
+                diffText += `${k}: ${ev1[k]} → ${ev2[k]}\n`;
+            }
+        }
+
+        return diffText;
+    }
+</script>
+
+</html>
