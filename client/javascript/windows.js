@@ -26,3 +26,22 @@ function createMenu(show) {
         document.body.removeChild(menu);
     }
 }
+
+
+
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('gesturechange', (e) => e.preventDefault());
+document.addEventListener('gestureend', (e) => e.preventDefault());
+
+
+
+let lastTouch = 0;
+
+document.addEventListener("touchstart", function (e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();   // 封鎖雙指縮放
+    }
+}, { passive: false });
+
+
+document.addEventListener('contextmenu', e => e.preventDefault());

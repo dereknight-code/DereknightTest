@@ -38,7 +38,12 @@ body {
 }
 
 #draw {
-    touch-action: none;
+    touch-action: none;       /* 停用觸控手勢：縮放、平移、旋轉 */
+    user-select: none;        /* 禁止文字選取 */
+    -webkit-user-select: none;
+    -webkit-touch-callout: none; /* 禁止 iOS 長按選單 */
+
+    
     /* 啟用 pointerdown/pointermove */
     background-color: #fff;
     /* padding: 30px; */
