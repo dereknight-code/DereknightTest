@@ -30,10 +30,6 @@
 <script>
     const panel = document.getElementById('draw');
     const draw = new Draw(panel);
-    draw.line({ point: [[50, 50]] });
-    draw.conline(100, 200);
-    draw.line({ point: [[150, 150]] });
-    draw.conline(200, 300);
     //touchstart
     panel.addEventListener('pointerdown', (e) => {
         const pos = getRelativePos(e, panel);
