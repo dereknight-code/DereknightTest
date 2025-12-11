@@ -13,15 +13,11 @@
 </head>
 
 <body>
-    <!-- <div id="index"> -->
     <div id="tool">
         <div class="button">比</div>
         <div class="button">干</div>
     </div>
     <div id="draw"></div>
-    <!-- </div> -->
-
-
 
     <!-- <button onclick="db.add('return', {test:'example'})">get</button>
     <button onclick="db.getAllData('return')">getAll</button> -->
@@ -34,13 +30,15 @@
     panel.addEventListener('pointerdown', (e) => {
         const pos = draw.getRelativePos(e);
         draw.line({ point: [[pos.x, pos.y]] });
-    });
+    }, { passive: false });
     //touchmove
     panel.addEventListener('pointermove', (e) => {
-        if (e.pressure === 0) return; // 未按下時忽略 (mouse)
+        if (e.pointerType === 'mouse') {
+            if (e.pressure === 0) return;
+        }
         const pos = draw.getRelativePos(e);
         draw.conline(pos.x, pos.y);
-    });
+    }, { passive: false });
 
 </script>
 
