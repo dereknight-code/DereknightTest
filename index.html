@@ -32,13 +32,13 @@
     const draw = new Draw(panel);
     //touchstart
     panel.addEventListener('pointerdown', (e) => {
-        const pos = getRelativePos(e, panel);
+        const pos = draw.getRelativePos(e);
         draw.line({ point: [[pos.x, pos.y]] });
     });
     //touchmove
     panel.addEventListener('pointermove', (e) => {
         if (e.pressure === 0) return; // 未按下時忽略 (mouse)
-        const pos = getRelativePos(e, panel);
+        const pos = draw.getRelativePos(e);
         draw.conline(pos.x, pos.y);
     });
 

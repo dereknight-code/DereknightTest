@@ -37,7 +37,7 @@ class Draw {
         }
     }
 
-    conline(x,y) {
+    conline(x, y) {
         const last = this.shapes.pop();
         last.point.push([x, y])
         this.line(last);
@@ -56,14 +56,19 @@ class Draw {
     clear() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
-}
 
 
 
-function getRelativePos(e, element) {
-    const rect = element.getBoundingClientRect();
-    return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-    };
+    getRelativePos(e) {
+        const rect = this.canvas.getBoundingClientRect();
+
+        // 避免 retina、CSS scale 造成偏差
+        const scaleX = this.canvas.width / rect.width;
+        const scaleY = this.canvas.height / rect.height;
+
+        return {
+            x: (e.clientX - rect.left) * scaleX,
+            y: (e.clientY - rect.top) * scaleY
+        };
+    }
 }

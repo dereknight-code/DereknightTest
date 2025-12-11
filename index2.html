@@ -34,7 +34,7 @@
     //touchstart
     panel.addEventListener('pointerdown', (e) => {
         tool.innerHTML += 'pointerdown';
-        const pos = getRelativePos(e, panel);
+        const pos = draw.getRelativePos(e);
         draw.line({ point: [[pos.x, pos.y]] });
     });
     //touchmove
