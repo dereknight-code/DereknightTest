@@ -1,25 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="icon" href="data:,">
-    <script src="./javascript/config.js"></script>
+    <link rel="stylesheet" href="./css/index.css">
     <script src="./javascript/LocalDB.js"></script>
     <script src="./javascript/windows.js"></script>
+    <script src="./javascript/draw.js"></script>
 </head>
+
 <body>
-     <button onclick="db.add('return', {test:'example'})">get</button>
-    <button onclick="db.getAllData('return')">getAll</button>
+    <!-- <div id="index"> -->
+    <div id="tool">
+        <div class="button">比</div>
+        <div class="button">干</div>
+    </div>
+    <div id="draw"></div>
+    <!-- </div> -->
+
+
+
+    <!-- <button onclick="db.add('return', {test:'example'})">get</button>
+    <button onclick="db.getAllData('return')">getAll</button> -->
 
 </body>
-</html>
-
-
-
-
 <script>
+    const panel = document.getElementById('draw');
+    const draw = new Draw(panel);
+    draw.line({ point: [[50, 50]] });
+    draw.conline(100, 200);
+    draw.line({ point: [[150, 150]] });
+    draw.conline(200, 300);
+    //touchstart
+    panel.addEventListener('pointerdown', (e) => {
+        const pos = getRelativePos(e, panel);
+        draw.line({ point: [[pos.x, pos.y]] });
+    });
+    //touchmove
+    panel.addEventListener('pointermove', (e) => {
+        if (e.pressure === 0) return; // 未按下時忽略 (mouse)
+        const pos = getRelativePos(e, panel);
+        draw.conline(pos.x, pos.y);
+    });
 
+</script>
 
+</html>
+<script>
 </script>
