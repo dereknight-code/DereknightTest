@@ -6,10 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="./css/index.css">
-    <script src="./javascript/LocalDB.js"></script>
-    <script src="./javascript/windows.js"></script>
-    <script src="./javascript/draw.js"></script>
+    <link rel="stylesheet" href="./client/css/index.css">
+    <script src="./client/javascript/LocalDB.js"></script>
+    <script src="./client/javascript/windows.js"></script>
+    <script src="./client/javascript/draw.js"></script>
 </head>
 
 <body>
@@ -29,14 +29,17 @@
 </body>
 <script>
     const panel = document.getElementById('draw');
+    const tool = document.getElementById('tool');
     const draw = new Draw(panel);
     //touchstart
     panel.addEventListener('pointerdown', (e) => {
+        tool.innerHTML += 'pointerdown';
         const pos = getRelativePos(e, panel);
         draw.line({ point: [[pos.x, pos.y]] });
     });
     //touchmove
     panel.addEventListener('pointermove', (e) => {
+        tool.innerHTML += 'pointermove';
         if (e.pressure === 0) return; // 未按下時忽略 (mouse)
         const pos = getRelativePos(e, panel);
         draw.conline(pos.x, pos.y);
