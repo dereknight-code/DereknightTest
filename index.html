@@ -33,9 +33,7 @@
     }, { passive: false });
     //touchmove
     panel.addEventListener('pointermove', (e) => {
-        if (e.pointerType === 'mouse') {
-            if (e.pressure === 0) return;
-        }
+        if (e.pointerType === 'mouse' && e.buttons === 0) return;
         const pos = draw.getRelativePos(e);
         draw.conline(pos.x, pos.y);
     }, { passive: false });
