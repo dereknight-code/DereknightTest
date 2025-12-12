@@ -11,7 +11,7 @@ class Draw {
 
         this.observer = new ResizeObserver(() => this.#resize());
         this.observer.observe(panel);
-
+        this.#lockScreen();
         this.#resize();
     }
 
@@ -53,13 +53,19 @@ class Draw {
             return true;
         });
     }
+
     #redraw0() {
+
         const lastIdx = this.shapes.length - 1;
         const last = this.shapes[lastIdx];
+
         if (!last || last.point.length < 2) return;
 
         const p2 = last.point[last.point.length - 1];
         const p1 = last.point[last.point.length - 2];
+
+        if (p2[0] != null)
+            this.#drawcycle(p2[0], p2[1]);
 
         this.shapes = this.shapes.filter((item, index) => {
             if (index === lastIdx) return true;
@@ -107,6 +113,14 @@ class Draw {
 
         this.ctx.stroke();
     }
+    #drawcycle(x, y, r = 8) {
+        this.ctx.beginPath();
+        this.ctx.fillStyle = 'lightgray';
+        this.ctx.arc(x, y, r, 0, 2 * Math.PI);
+        this.ctx.fill();
+        this.ctx.closePath();
+    }
+
 
     #clear() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -132,6 +146,10 @@ class Draw {
         if (y < -this.EPS) return false;
 
         return (x + y >= this.ONE_MINUS_EPS);
+    }
+
+    draw() {
+        this.#redraw();
     }
 
     addpoint(x, y) {
@@ -161,4 +179,32 @@ class Draw {
             y: (e.clientY - rect.top) * scaleY
         };
     }
+
+
+
+
+
+    //====================================================================================
+
+    // 鎖定螢幕縮放與手勢
+    #lockScreen() {
+        const prevent = (e) => e.preventDefault();
+        document.addEventListener('gesturestart', prevent);
+        document.addEventListener('gesturechange', prevent);
+        document.addEventListener('gestureend', prevent);
+
+        // 真正的多指縮放攔截 (更嚴謹的寫法)
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+
+        // 阻止單指下拉刷新
+        document.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 1) {
+                // 如果你的 Canvas 滿版，直接 preventDefault
+                e.preventDefault();
+            }
+        }, { passive: false });
+    };
+
 }

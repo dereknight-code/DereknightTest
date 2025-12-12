@@ -2,13 +2,7 @@ document.addEventListener('gesturestart', (e) => e.preventDefault());
 document.addEventListener('gesturechange', (e) => e.preventDefault());
 document.addEventListener('gestureend', (e) => e.preventDefault());
 
-document.addEventListener('contextmenu', function (e) {
-    e.preventDefault();
 
-    menu.style.left = e.pageX + "px";
-    menu.style.top = e.pageY + "px";
-    createMenu(true);
-});
 
 document.addEventListener('click', function (e) {
     createMenu(false);
@@ -26,6 +20,10 @@ document.addEventListener("touchstart", function (e) {
     }
 }, { passive: false });
 
+
+
+//====================================================================================
+
 const menu = document.createElement('div');
 menu.id = 'custom-context-menu';
 menu.style.position = 'absolute';
@@ -33,6 +31,14 @@ menu.style.backgroundColor = '#fff';
 menu.style.border = '1px solid #ccc';
 menu.style.padding = '10px';
 menu.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+
+document.addEventListener('contextmenu', function (e) {
+    e.preventDefault();
+
+    menu.style.left = e.pageX + "px";
+    menu.style.top = e.pageY + "px";
+    createMenu(true);
+});
 
 function createMenu(show) {
     if (show) {
@@ -44,7 +50,6 @@ function createMenu(show) {
 
 //====================================================================================
 
-
 window.onload = () => {
 
     const panel = document.getElementById('draw');
@@ -55,13 +60,19 @@ window.onload = () => {
     //touchstart
     panel.addEventListener('pointerdown', (e) => {
         const pos = draw.getRelativePos(e);
-        draw.line({ point: [[pos.x, pos.y]], width: 1, toolstyle: toolstyle.innerHTML});
+        draw.line({ point: [[pos.x, pos.y]], width: 1, toolstyle: toolstyle.innerHTML });
     }, { passive: false });
     //touchmove
     panel.addEventListener('pointermove', (e) => {
         if (e.pointerType === 'mouse' && e.buttons === 0) return;
         const pos = draw.getRelativePos(e);
         draw.addpoint(pos.x, pos.y);
+    }, { passive: false });
+
+    panel.addEventListener('pointerup', (e) => {
+        // if (e.pointerType === 'mouse' && e.buttons === 0) return;
+        draw.line({ point: [[null, null]], width: 1, toolstyle: toolstyle.innerHTML });
+        draw.addpoint(null, null);
     }, { passive: false });
 
 
