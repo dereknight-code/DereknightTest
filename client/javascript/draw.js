@@ -1,5 +1,6 @@
 class Draw {
     constructor(panel) {
+        this.panel = panel;
         this.EPS = 1e-10;
         this.ONE_MINUS_EPS = 1 - this.EPS;
 
@@ -7,11 +8,14 @@ class Draw {
         this.ctx = this.canvas.getContext('2d');
         panel.appendChild(this.canvas);
 
+        this.toolstyle = 1;
+        this.ifdown = false;
         this.shapes = [];
 
         this.observer = new ResizeObserver(() => this.#resize());
         this.observer.observe(panel);
         this.#lockScreen();
+        this.#action();
         this.#resize();
     }
 
@@ -25,17 +29,16 @@ class Draw {
     #redraw() {
         this.#clear();
         // console.log(this.shapes);
+
         for (const s of this.shapes) {
             const pts = s.point;
             if (!pts || pts.length < 2) continue;
+            if (pts[0][0] == null) continue;
 
             this.ctx.strokeStyle = s.color || 'black';
-            this.ctx.lineWidth = s.width || 1;
+            this.ctx.lineWidth = s.width || 2;
 
-            switch (s.toolstyle || '1') {
-                case '0':
-                    this.#redraw0();
-                    break;
+            switch (String(s.toolstyle)) {
                 case '1':
                     this.#redraw1(pts);
                     break;
@@ -46,16 +49,11 @@ class Draw {
             }
         }
 
-        const lastIdx = this.shapes.length - 1;
-        this.shapes = this.shapes.filter((item, index) => {
-            if (index === lastIdx) return true;
-            if (item.toolstyle == '0') return false;
-            return true;
-        });
     }
 
-    #redraw0() {
-
+    #checkCollision() {
+        this.#clear();
+        this.#redraw();
         const lastIdx = this.shapes.length - 1;
         const last = this.shapes[lastIdx];
 
@@ -64,7 +62,7 @@ class Draw {
         const p2 = last.point[last.point.length - 1];
         const p1 = last.point[last.point.length - 2];
 
-        if (p2[0] != null)
+        if (this.ifdown)
             this.#drawcycle(p2[0], p2[1]);
 
         this.shapes = this.shapes.filter((item, index) => {
@@ -148,15 +146,18 @@ class Draw {
         return (x + y >= this.ONE_MINUS_EPS);
     }
 
-    draw() {
-        this.#redraw();
+    setToolstyle(i) {
+        this.toolstyle = i;
     }
 
     addpoint(x, y) {
-        const last = this.shapes.pop();
-        last.point.push([x, y])
-        this.line(last);
-        this.#redraw();
+        if (this.shapes.length === 0) return;
+        const last = this.shapes[this.shapes.length - 1];
+        last.point.push([x, y]);
+
+        if (String(this.toolstyle) == '0') {
+            this.#checkCollision();
+        } else this.#redraw();
     }
 
     line(shape = {
@@ -205,6 +206,34 @@ class Draw {
                 e.preventDefault();
             }
         }, { passive: false });
-    };
+    }
+
+    //====================================================================================
+
+
+    #action() {
+
+        this.panel.addEventListener('pointerdown', (e) => {
+            const pos = this.getRelativePos(e);
+            this.ifdown = true;
+            this.line({ point: [[pos.x, pos.y]], width: 3, toolstyle: this.toolstyle });
+        }, { passive: false });
+        //touchmove
+        this.panel.addEventListener('pointermove', (e) => {
+            if (e.pointerType === 'mouse' && e.buttons === 0) return;
+            const pos = this.getRelativePos(e);
+            this.addpoint(pos.x, pos.y);
+        }, { passive: false });
+
+        this.panel.addEventListener('pointerup', (e) => {
+            this.ifdown = false;
+            const last = this.shapes[this.shapes.length - 1];
+            if (last && String(last.toolstyle) === '0') {
+                this.shapes.pop();
+                this.#redraw();
+            }
+        }, { passive: false });
+
+    }
 
 }
