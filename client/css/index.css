@@ -19,7 +19,7 @@ body {
     box-shadow: 4px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.button {
+.button ,#toolstyle {
     flex: 1;
     background-color: #eee;
     color: #444;
