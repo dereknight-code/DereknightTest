@@ -122,7 +122,7 @@ class Draw {
 
         this.ctx.stroke();
     }
-    #drawcycle(x, y, r = 8, Alpha = 0.4, color = 'darkgray') {
+    #drawcycle(x, y, r = 16, Alpha = 0.4, color = 'darkgray') {
         this.ctx.save();
 
         this.ctx.beginPath();
@@ -144,7 +144,7 @@ class Draw {
         if ((a[0] === b[0] && a[1] === b[1]) || (a[0] === c[0] && a[1] === c[1])) return true;
 
         const bpx = p[0] - b[0], bpy = p[1] - b[1];
-        if ( bpx*bpx + bpy*bpy < 64) return true;
+        if ( bpx*bpx + bpy*bpy < 256) return true;
 
         
 
