@@ -52,29 +52,11 @@ function createMenu(show) {
 
 window.onload = () => {
 
-    const panel = document.getElementById('draw');
+    const panel = document.getElementById('drawPanel');
     const toolstyle = document.querySelector("#toolstyle");
     const tool = document.querySelectorAll(".button");
 
     const draw = new Draw(panel);
-    //touchstart
-    // panel.addEventListener('pointerdown', (e) => {
-    //     const pos = draw.getRelativePos(e);
-    //     draw.line({ point: [[pos.x, pos.y]], width: 3, toolstyle: toolstyle.innerHTML });
-    // }, { passive: false });
-    // //touchmove
-    // panel.addEventListener('pointermove', (e) => {
-    //     if (e.pointerType === 'mouse' && e.buttons === 0) return;
-    //     const pos = draw.getRelativePos(e);
-    //     draw.addpoint(pos.x, pos.y);
-    // }, { passive: false });
-
-    // panel.addEventListener('pointerup', (e) => {
-    //     // if (e.pointerType === 'mouse' && e.buttons === 0) return;
-    //     draw.line({ point: [[null, null]], width: 1, toolstyle: toolstyle.innerHTML });
-    //     draw.addpoint(null, null);
-    // }, { passive: false });
-
 
     tool.forEach((btn, index) => {
         btn.addEventListener('click', () => {

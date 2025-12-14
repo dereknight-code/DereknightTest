@@ -4,149 +4,174 @@ class Draw {
         this.EPS = 1e-10;
         this.ONE_MINUS_EPS = 1 - this.EPS;
 
-        this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext('2d');
-        panel.appendChild(this.canvas);
+        this.buffCanvas = document.createElement('Canvas');
+        this.drawCanvas = document.createElement('Canvas');
+        this.buffCtx = this.buffCanvas.getContext('2d');
+        this.drawCtx = this.drawCanvas.getContext('2d');
+        panel.appendChild(this.buffCanvas);
+        panel.appendChild(this.drawCanvas);
+
+        this.#setCss();
 
         this.toolstyle = 1;
         this.ifdown = false;
         this.shapes = [];
 
-        this.observer = new ResizeObserver(() => this.#resize());
+        this.observer = new ResizeObserver(() => {
+            this.#resize(this.buffCanvas);
+            this.#resize(this.drawCanvas);
+            this.#fullRedrawBuff();
+        });
         this.observer.observe(panel);
         this.#lockScreen();
         this.#action();
-        this.#resize();
+        this.#resize(this.buffCanvas);
+        this.#resize(this.drawCanvas);
     }
 
-    #resize() {
-        const parent = this.canvas.parentElement;
+    setToolstyle(i) {
+        this.toolstyle = i;
+    }
+
+    addpoint(x, y) {
+        if (this.shapes.length === 0) return;
+        const last = this.shapes[this.shapes.length - 1];
+        last.point.push([x, y]);
+    }
+
+    line(shape = {
+        point: [[50, 50], [200, 200], [300, 100]],
+        color: 'red',
+        width: 5,
+        toolstyle: 1
+    }) {
+        this.shapes.push(shape);
+    }
+
+    //====================================================================================
+
+    #resize(canvas) {
+        const parent = canvas.parentElement;
         const width = parent.clientWidth;
         const height = parent.clientHeight;
 
-        if (this.canvas.width !== width || this.canvas.height !== height) {
-            this.canvas.width = width;
-            this.canvas.height = height;
-            this.#redraw();
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
         }
     }
 
     #redraw() {
         this.#clear();
-        for (const s of this.shapes) {
-            const pts = s.point;
-            if (!pts || pts.length == 0) continue;
 
-            this.ctx.strokeStyle = s.color || 'black';
-            this.ctx.lineWidth = s.width || 2;
-            if (pts.length == 1 && String(s.toolstyle) != '0') {
-                this.#drawcycle(pts[0][0], pts[0][1], this.ctx.lineWidth, 1, this.ctx.strokeStyle);
-            } else switch (String(s.toolstyle)) {
-                case '1':
-                    this.#redraw1(pts);
-                    break;
-                case '2':
-                    this.#redraw2(pts);
-                    break;
-                default: { }
-            }
-        }
+        if (this.shapes.length < 1) return;
+
+        const lastIdx = this.shapes.length - 1;
+        const last = this.shapes[lastIdx];
+        this.#pen(this.drawCtx, last);
+
         if (this.toolstyle == '0' && this.ifdown) {
-
-            const lastIdx = this.shapes.length - 1;
-            const last = this.shapes[lastIdx];
-
-            if (!last || last.point.length < 2) return;
-
+            if (!last) return;
             const p2 = last.point[last.point.length - 1];
-            const p1 = last.point[last.point.length - 2];
-
             this.#drawcycle(p2[0], p2[1]);
         }
     }
 
-    #checkCollision() {
+    #pen(ctx, s) {
+        const pts = s.point;
+        const pentype = String(s.toolstyle);
+        if (!pts || pts.length == 0 || pentype == '0') return;
+
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = s.color || 'black';
+        ctx.lineWidth = s.width || 2;
+
+        if (pts.length == 1) {
+            this.#drawcycle(pts[0][0], pts[0][1], ctx.lineWidth, 1, ctx.strokeStyle);
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(pts[0][0], pts[0][1]);
+
+            if (pentype == '2') {
+                for (let i = 1; i < pts.length - 2; i++) {
+                    const xc = (pts[i][0] + pts[i + 1][0]) / 2;
+                    const yc = (pts[i][1] + pts[i + 1][1]) / 2;
+                    ctx.quadraticCurveTo(pts[i][0], pts[i][1], xc, yc);
+                }
+                const len = pts.length;
+                ctx.quadraticCurveTo(
+                    pts[len - 2][0],
+                    pts[len - 2][1],
+                    pts[len - 1][0],
+                    pts[len - 1][1]
+                );
+            } else if (pentype == '1') {
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i][0], pts[i][1]);
+                }
+            }
+            ctx.stroke();
+        }
+    }
+
+    #erase() {
         const lastIdx = this.shapes.length - 1;
         const last = this.shapes[lastIdx];
 
         if (!last || last.point.length < 2) return;
 
-        const p2 = last.point[last.point.length - 1];
-        const p1 = last.point[last.point.length - 2];
+        const lastPot = last.point.length;
+        const p2 = last.point[lastPot - 1];
+        const p1 = last.point[lastPot - 2];
+
+        let isErase = false;
 
         this.shapes = this.shapes.filter((item, index) => {
             if (index === lastIdx) return true;
             let hasCollision = false;
             for (let i = 0; i < item.point.length; i++) {
-                console.log(item);
                 const sp = item.point[i];
-                const ep = item.point[(i == item.point.length-1)?i:(i + 1)];
+                const ep = item.point[(i == item.point.length - 1) ? i : (i + 1)];
 
                 if (this.#cross(p1, p2, sp, ep)) {
                     hasCollision = true;
+                    isErase = true;
                     break;
                 }
             }
             return !hasCollision;
         });
-    }
-
-
-    #redraw1(pts) {
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length; i++) {
-            this.ctx.lineTo(pts[i][0], pts[i][1]);
+        if (isErase) {
+            this.#fullRedrawBuff();
         }
-        this.ctx.stroke();
     }
-    #redraw2(pts) {
 
-        this.ctx.lineCap = 'round';
-        this.ctx.lineJoin = 'round';
-        this.ctx.beginPath();
-        this.ctx.moveTo(pts[0][0], pts[0][1]);
-        for (let i = 1; i < pts.length - 2; i++) {
-            const xc = (pts[i][0] + pts[i + 1][0]) / 2;
-            const yc = (pts[i][1] + pts[i + 1][1]) / 2;
-            this.ctx.quadraticCurveTo(pts[i][0], pts[i][1], xc, yc);
-        }
-        const len = pts.length;
-        this.ctx.quadraticCurveTo(
-            pts[len - 2][0],
-            pts[len - 2][1],
-            pts[len - 1][0],
-            pts[len - 1][1]
-        );
-
-        this.ctx.stroke();
-    }
     #drawcycle(x, y, r = 16, Alpha = 0.4, color = 'darkgray') {
-        this.ctx.save();
+        this.drawCtx.save();
 
-        this.ctx.beginPath();
-        this.ctx.globalAlpha = Alpha;
-        this.ctx.fillStyle = color;
-        this.ctx.arc(x, y, r, 0, 4 * Math.PI);
-        this.ctx.fill();
-        this.ctx.closePath();
+        this.drawCtx.beginPath();
+        this.drawCtx.globalAlpha = Alpha;
+        this.drawCtx.fillStyle = color;
+        this.drawCtx.arc(x, y, r, 0, 4 * Math.PI);
+        this.drawCtx.fill();
+        this.drawCtx.closePath();
 
-        this.ctx.restore();
+        this.drawCtx.restore();
     }
 
 
     #clear() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawCtx.clearRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
     }
 
     #cross(a, p, b, c) {
         if ((a[0] === b[0] && a[1] === b[1]) || (a[0] === c[0] && a[1] === c[1])) return true;
 
         const bpx = p[0] - b[0], bpy = p[1] - b[1];
-        if ( bpx*bpx + bpy*bpy < 256) return true;
+        if (bpx * bpx + bpy * bpy < 256) return true;
 
-        
+
 
         const abx = b[0] - a[0], aby = b[1] - a[1];
         const acx = c[0] - a[0], acy = c[1] - a[1];
@@ -167,37 +192,50 @@ class Draw {
         return (x + y >= this.ONE_MINUS_EPS);
     }
 
-    setToolstyle(i) {
-        this.toolstyle = i;
+    #fullRedrawBuff() {
+        this.buffCtx.clearRect(0, 0, this.buffCanvas.width, this.buffCanvas.height);
+        for (const s of this.shapes) {
+            this.#pen(this.buffCtx, s);
+        }
     }
 
-    addpoint(x, y) {
-        if (this.shapes.length === 0) return;
-        const last = this.shapes[this.shapes.length - 1];
-        last.point.push([x, y]);
+    #commitToBackground() {
+        this.buffCtx.save();
+        this.buffCtx.setTransform(1, 0, 0, 1, 0, 0);
+        this.buffCtx.drawImage(this.drawCanvas, 0, 0);
+        this.buffCtx.restore();
 
-        // if (String(this.toolstyle) == '0') {
-        //     this.#checkCollision();
-        // } else this.#redraw();
+        this.drawCtx.clearRect(0, 0, this.drawCanvas.width, this.drawCanvas.height);
     }
 
-    line(shape = {
-        point: [[50, 50], [200, 200], [300, 100]],
-        color: 'red',
-        width: 5,
-        toolstyle: 1
-    }) {
-        this.shapes.push(shape);
-    }
-
-
-    getRelativePos(e) {
-        const parent = this.canvas.parentElement;
-        const scaleX = this.canvas.width / parent.clientWidth;
-        const scaleY = this.canvas.height / parent.clientHeight;
+    #getRelativePos(e) {
+        const parent = this.drawCanvas.parentElement;
+        const scaleX = this.drawCanvas.width / parent.clientWidth;
+        const scaleY = this.drawCanvas.height / parent.clientHeight;
         return { x: e.offsetX * scaleX, y: e.offsetY * scaleY };
     }
 
+    //====================================================================================
+
+    #setCss() {
+        this.drawCanvas.parentElement.style.position = 'relative';
+        this.drawCanvas.style.touchAction = 'none';
+        this.drawCanvas.style.userSelect = 'none';
+        this.drawCanvas.style.webkitUserSelect = 'none';
+        this.drawCanvas.style.webkitTapHighlightColor = 'transparent';
+        this.drawCanvas.style.webkitTouchCallout = 'none';
+
+        this.drawCanvas.style.position = 'absolute';
+        this.drawCanvas.style.left = '0';
+        this.drawCanvas.style.top = '0';
+        this.drawCanvas.style.zIndex = '2';
+        this.drawCanvas.style.backgroundColor = 'transparent';
+
+        this.buffCanvas.style.position = 'absolute';
+        this.buffCanvas.style.left = '0';
+        this.buffCanvas.style.top = '0';
+        this.buffCanvas.style.zIndex = '1';
+    }
 
     //====================================================================================
 
@@ -223,7 +261,7 @@ class Draw {
     #action() {
         let ticking = false;
         this.panel.addEventListener('pointerdown', (e) => {
-            const pos = this.getRelativePos(e);
+            const pos = this.#getRelativePos(e);
             this.ifdown = true;
             this.line({ point: [[pos.x, pos.y]], width: 3, toolstyle: this.toolstyle });
 
@@ -232,33 +270,22 @@ class Draw {
 
         this.panel.addEventListener('pointermove', (e) => {
             if (e.pointerType === 'mouse' && e.buttons === 0) return;
-            // const pos = this.getRelativePos(e);
-            // this.addpoint(pos.x, pos.y);
 
             const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
             for (let event of events) {
-                // // 使用 event.offsetX, event.offsetY 繪製更精細的線條
-                // this.currentPath.points.push({ x: event.offsetX, y: event.offsetY });
-
-
-                const pos = this.getRelativePos(event);
+                const pos = this.#getRelativePos(event);
                 this.addpoint(pos.x, pos.y);
             }
-
-
             if (String(this.toolstyle) == '0') {
-                this.#checkCollision();
+                this.#erase();
             }
-
             if (!ticking) {
                 requestAnimationFrame(() => {
                     this.#redraw();
-
                     ticking = false;
                 });
                 ticking = true;
             }
-            
         }, { passive: false });
 
         this.panel.addEventListener('pointerup', (e) => {
@@ -268,6 +295,7 @@ class Draw {
                 this.shapes.pop();
                 this.#redraw();
             }
+            this.#commitToBackground();
         }, { passive: false });
 
     }
