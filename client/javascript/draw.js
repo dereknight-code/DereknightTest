@@ -33,17 +33,15 @@ class Draw {
 
     #redraw() {
         this.#clear();
-        // console.log(this.shapes);
-
         for (const s of this.shapes) {
             const pts = s.point;
-            if (!pts || pts.length < 2) continue;
-            if (pts[0][0] == null) continue;
+            if (!pts || pts.length == 0) continue;
 
             this.ctx.strokeStyle = s.color || 'black';
             this.ctx.lineWidth = s.width || 2;
-
-            switch (String(s.toolstyle)) {
+            if (pts.length == 1 && String(s.toolstyle) != '0') {
+                this.#drawcycle(pts[0][0], pts[0][1], this.ctx.lineWidth, 1, this.ctx.strokeStyle);
+            } else switch (String(s.toolstyle)) {
                 case '1':
                     this.#redraw1(pts);
                     break;
@@ -123,15 +121,17 @@ class Draw {
 
         this.ctx.stroke();
     }
-    #drawcycle(x, y, r = 8) {
+    #drawcycle(x, y, r = 8, Alpha = 0.4, color = 'darkgray') {
+        this.ctx.save();
+
         this.ctx.beginPath();
-        this.ctx.globalAlpha = 0.4;
-        this.ctx.fillStyle = 'darkgray';
+        this.ctx.globalAlpha = Alpha;
+        this.ctx.fillStyle = color;
         this.ctx.arc(x, y, r, 0, 4 * Math.PI);
         this.ctx.fill();
         this.ctx.closePath();
 
-        this.ctx.globalAlpha = 1.0;
+        this.ctx.restore();
     }
 
 
@@ -141,6 +141,11 @@ class Draw {
 
     #cross(a, p, b, c) {
         if ((a[0] === b[0] && a[1] === b[1]) || (a[0] === c[0] && a[1] === c[1])) return true;
+
+
+        
+        const bpx = p[0] - b[0], bpy = p[1] - b[1];
+        if ( bpx*bpx + bpy*bpy < 64) return true;
 
         const abx = b[0] - a[0], aby = b[1] - a[1];
         const acx = c[0] - a[0], acy = c[1] - a[1];
@@ -220,6 +225,8 @@ class Draw {
             const pos = this.getRelativePos(e);
             this.ifdown = true;
             this.line({ point: [[pos.x, pos.y]], width: 3, toolstyle: this.toolstyle });
+
+            this.#redraw();
         }, { passive: false });
 
         this.panel.addEventListener('pointermove', (e) => {
@@ -250,6 +257,7 @@ class Draw {
                 });
                 ticking = true;
             }
+            
         }, { passive: false });
 
         this.panel.addEventListener('pointerup', (e) => {
