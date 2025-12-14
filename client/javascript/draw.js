@@ -20,10 +20,15 @@ class Draw {
     }
 
     #resize() {
-        const rect = this.canvas.parentElement.getBoundingClientRect();
-        this.canvas.width = rect.width;
-        this.canvas.height = rect.height;
-        this.#redraw();
+        const parent = this.canvas.parentElement;
+        const width = parent.clientWidth;
+        const height = parent.clientHeight;
+
+        if (this.canvas.width !== width || this.canvas.height !== height) {
+            this.canvas.width = width;
+            this.canvas.height = height;
+            this.#redraw();
+        }
     }
 
     #redraw() {
@@ -48,12 +53,21 @@ class Draw {
                 default: { }
             }
         }
+        if (this.toolstyle == '0' && this.ifdown) {
 
+            const lastIdx = this.shapes.length - 1;
+            const last = this.shapes[lastIdx];
+
+            if (!last || last.point.length < 2) return;
+
+            const p2 = last.point[last.point.length - 1];
+            const p1 = last.point[last.point.length - 2];
+
+            this.#drawcycle(p2[0], p2[1]);
+        }
     }
 
     #checkCollision() {
-        this.#clear();
-        this.#redraw();
         const lastIdx = this.shapes.length - 1;
         const last = this.shapes[lastIdx];
 
@@ -61,9 +75,6 @@ class Draw {
 
         const p2 = last.point[last.point.length - 1];
         const p1 = last.point[last.point.length - 2];
-
-        if (this.ifdown)
-            this.#drawcycle(p2[0], p2[1]);
 
         this.shapes = this.shapes.filter((item, index) => {
             if (index === lastIdx) return true;
@@ -92,6 +103,7 @@ class Draw {
         this.ctx.stroke();
     }
     #redraw2(pts) {
+
         this.ctx.lineCap = 'round';
         this.ctx.lineJoin = 'round';
         this.ctx.beginPath();
@@ -113,10 +125,13 @@ class Draw {
     }
     #drawcycle(x, y, r = 8) {
         this.ctx.beginPath();
-        this.ctx.fillStyle = 'lightgray';
-        this.ctx.arc(x, y, r, 0, 2 * Math.PI);
+        this.ctx.globalAlpha = 0.4;
+        this.ctx.fillStyle = 'darkgray';
+        this.ctx.arc(x, y, r, 0, 4 * Math.PI);
         this.ctx.fill();
         this.ctx.closePath();
+
+        this.ctx.globalAlpha = 1.0;
     }
 
 
@@ -155,9 +170,9 @@ class Draw {
         const last = this.shapes[this.shapes.length - 1];
         last.point.push([x, y]);
 
-        if (String(this.toolstyle) == '0') {
-            this.#checkCollision();
-        } else this.#redraw();
+        // if (String(this.toolstyle) == '0') {
+        //     this.#checkCollision();
+        // } else this.#redraw();
     }
 
     line(shape = {
@@ -171,38 +186,27 @@ class Draw {
 
 
     getRelativePos(e) {
-        const rect = this.canvas.getBoundingClientRect();
-        const scaleX = this.canvas.width / rect.width;
-        const scaleY = this.canvas.height / rect.height;
-
-        return {
-            x: (e.clientX - rect.left) * scaleX,
-            y: (e.clientY - rect.top) * scaleY
-        };
+        const parent = this.canvas.parentElement;
+        const scaleX = this.canvas.width / parent.clientWidth;
+        const scaleY = this.canvas.height / parent.clientHeight;
+        return { x: e.offsetX * scaleX, y: e.offsetY * scaleY };
     }
-
-
-
 
 
     //====================================================================================
 
-    // 鎖定螢幕縮放與手勢
     #lockScreen() {
         const prevent = (e) => e.preventDefault();
         document.addEventListener('gesturestart', prevent);
         document.addEventListener('gesturechange', prevent);
         document.addEventListener('gestureend', prevent);
 
-        // 真正的多指縮放攔截 (更嚴謹的寫法)
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
 
-        // 阻止單指下拉刷新
         document.addEventListener('touchmove', (e) => {
             if (e.touches.length === 1) {
-                // 如果你的 Canvas 滿版，直接 preventDefault
                 e.preventDefault();
             }
         }, { passive: false });
@@ -210,19 +214,42 @@ class Draw {
 
     //====================================================================================
 
-
     #action() {
-
+        let ticking = false;
         this.panel.addEventListener('pointerdown', (e) => {
             const pos = this.getRelativePos(e);
             this.ifdown = true;
             this.line({ point: [[pos.x, pos.y]], width: 3, toolstyle: this.toolstyle });
         }, { passive: false });
-        //touchmove
+
         this.panel.addEventListener('pointermove', (e) => {
             if (e.pointerType === 'mouse' && e.buttons === 0) return;
-            const pos = this.getRelativePos(e);
-            this.addpoint(pos.x, pos.y);
+            // const pos = this.getRelativePos(e);
+            // this.addpoint(pos.x, pos.y);
+
+            const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+            for (let event of events) {
+                // // 使用 event.offsetX, event.offsetY 繪製更精細的線條
+                // this.currentPath.points.push({ x: event.offsetX, y: event.offsetY });
+
+
+                const pos = this.getRelativePos(event);
+                this.addpoint(pos.x, pos.y);
+            }
+
+
+            if (String(this.toolstyle) == '0') {
+                this.#checkCollision();
+            }
+
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    this.#redraw();
+
+                    ticking = false;
+                });
+                ticking = true;
+            }
         }, { passive: false });
 
         this.panel.addEventListener('pointerup', (e) => {
