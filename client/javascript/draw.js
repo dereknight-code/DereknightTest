@@ -77,9 +77,10 @@ class Draw {
         this.shapes = this.shapes.filter((item, index) => {
             if (index === lastIdx) return true;
             let hasCollision = false;
-            for (let i = 0; i < item.point.length - 1; i++) {
+            for (let i = 0; i < item.point.length; i++) {
+                console.log(item);
                 const sp = item.point[i];
-                const ep = item.point[i + 1];
+                const ep = item.point[(i == item.point.length-1)?i:(i + 1)];
 
                 if (this.#cross(p1, p2, sp, ep)) {
                     hasCollision = true;
@@ -142,10 +143,10 @@ class Draw {
     #cross(a, p, b, c) {
         if ((a[0] === b[0] && a[1] === b[1]) || (a[0] === c[0] && a[1] === c[1])) return true;
 
-
-        
         const bpx = p[0] - b[0], bpy = p[1] - b[1];
         if ( bpx*bpx + bpy*bpy < 64) return true;
+
+        
 
         const abx = b[0] - a[0], aby = b[1] - a[1];
         const acx = c[0] - a[0], acy = c[1] - a[1];
